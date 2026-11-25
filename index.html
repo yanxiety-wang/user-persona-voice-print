@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Priya’s voice print, growing live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root { --bg:#FAF9F7; --ink:#090034; --muted:#5F5E5D; --rule:#DAD8D6; --btn:#FFFFFF; color-scheme:light; }
+:root[data-theme="dark"] { --bg:#090034; --ink:#FAF9F7; --muted:#C2C0BE; --rule:#474646; --btn:#14104A; color-scheme:dark; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.55 Poppins, system-ui, -apple-system, "Segoe UI", sans-serif; transition:background .2s, color .2s; }
+main { max-width:640px; margin:0 auto; padding:40px 20px 56px; }
+h1 { font-size:26px; font-weight:600; margin:0; }
+.sub { color:var(--muted); margin:4px 0 20px; }
+.stage { display:flex; justify-content:center; }
+svg { width:100%; max-width:420px; height:auto; display:block; }
+.controls { display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:center; margin:18px 0 26px; }
+button, .dl a { font:500 14px Poppins, system-ui, sans-serif; color:var(--ink); background:var(--btn); border:1px solid var(--rule); border-radius:10px; padding:10px 16px; min-height:44px; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; }
+button:focus-visible, .dl a:focus-visible { outline:2px solid #6668C2; outline-offset:2px; }
+.dl { display:flex; flex-wrap:wrap; gap:10px; }
+h2 { font-size:16px; font-weight:600; margin:28px 0 10px; }
+ul { margin:0; padding-left:20px; color:var(--muted); }
+li b { color:var(--ink); font-weight:500; }
+.note { font-size:13px; color:var(--muted); margin-top:28px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Priya’s voice print, growing live</h1>
+  <p class="sub">The print grows question by question as she answers. Sample data, illustrative.</p>
+  <div class="stage"><svg id="print" viewBox="-330 -330 660 660" role="img" aria-label="Priya Shah’s voice print growing as she answers each question"></svg></div>
+  <div class="controls">
+    <button id="play" type="button">Pause</button>
+    <button id="replay" type="button">Replay</button>
+    <button id="theme" type="button" aria-pressed="false">Dark background</button>
+  </div>
+  <h2>How to read it</h2>
+  <ul>
+    <li><b>Dots around the ring</b> fill in while she waits to answer. Each dot is a quarter second.</li>
+    <li><b>Rays pointing out</b> are things she wants. <b>Rays pointing in</b> are worries.</li>
+    <li><b>Ray length</b> is the energy in her voice; the lighter steps mark 40% and 70%.</li>
+    <li><b>Color</b> is the feeling: lavender for hopeful, brown for worried, gray for neutral.</li>
+    <li><b>Gaps</b> are pauses of at least half a second.</li>
+  </ul>
+  <h2>Downloads</h2>
+  <div class="dl">
+    <a href="assets/priya-print-light.mp4" download>MP4, light</a>
+    <a href="assets/priya-print-dark.mp4" download>MP4, dark</a>
+    <a href="assets/priya-print-light.gif" download>GIF, light</a>
+    <a href="assets/priya-print-dark.gif" download>GIF, dark</a>
+    <a href="assets/priya-print-final-light.svg" download>SVG, light</a>
+    <a href="assets/priya-print-final-dark.svg" download>SVG, dark</a>
+  </div>
+  <p class="note">Priya Shah and her interview are sample data made to demonstrate the design.</p>
+</main>
+<script src="print-data.js"></script>
+<script>
+(function () {
+  const D = window.PRINT_DATA, NS = "http://www.w3.org/2000/svg", R = 150, svg = document.getElementById("print");
+  const RING = { light: "#DAD8D6", dark: "#474646" };
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let theme = "light", rays = [], dots = [], ring, t = reduce ? D.total : 0, playing = !reduce, last = null;
+  const ease = x => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
+  function build() {
+    svg.replaceChildren(); rays = []; dots = [];
+    ring = document.createElementNS(NS, "circle");
+    ring.setAttribute("r", R); ring.setAttribute("fill", "none"); ring.setAttribute("stroke", RING[theme]); ring.setAttribute("stroke-width", "1.5");
+    svg.appendChild(ring);
+    D.dots.forEach(d => { const c = document.createElementNS(NS, "circle");
+      c.setAttribute("cx", d.x); c.setAttribute("cy", d.y); c.setAttribute("r", 3); c.setAttribute("fill", "#908F8D");
+      svg.appendChild(c); dots.push([c, d]); });
+    D[theme].forEach(r => { const g = document.createElementNS(NS, "g");
+      r.paths.forEach(q => { const p = document.createElementNS(NS, "path");
+        p.setAttribute("d", q.d); p.setAttribute("fill", q.fill); p.setAttribute("stroke", q.stroke);
+        p.setAttribute("stroke-width", q.sw); p.setAttribute("stroke-linecap", "round"); p.setAttribute("opacity", q.op);
+        g.appendChild(p); });
+      svg.appendChild(g); rays.push([g, r]); });
+    draw();
+  }
+  function draw() {
+    dots.forEach(([c, d]) => c.setAttribute("opacity", Math.min(1, Math.max(0, (t - d.start) / 0.2))));
+    rays.forEach(([g, r]) => { const s = Math.max(0.001, ease((t - r.start) / 0.38));
+      g.setAttribute("opacity", t >= r.start ? 1 : 0);
+      g.setAttribute("transform", "rotate(" + r.rot + ") translate(0 " + (-R) + ") scale(1 " + s + ") translate(0 " + R + ")"); });
+  }
+  function loop(now) {
+    if (playing) { if (last != null) t += (now - last) / 1000; last = now; if (t > D.total) t = 0; draw(); } else last = null;
+    requestAnimationFrame(loop);
+  }
+  const play = document.getElementById("play");
+  const setPlay = () => play.textContent = playing ? "Pause" : "Play";
+  play.addEventListener("click", () => { playing = !playing; setPlay(); });
+  document.getElementById("replay").addEventListener("click", () => { t = 0; playing = true; setPlay(); draw(); });
+  const tb = document.getElementById("theme");
+  tb.addEventListener("click", () => {
+    theme = theme === "light" ? "dark" : "light";
+    document.documentElement.dataset.theme = theme;
+    tb.setAttribute("aria-pressed", theme === "dark"); tb.textContent = theme === "dark" ? "Light background" : "Dark background";
+    build();
+  });
+  setPlay(); build(); requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
